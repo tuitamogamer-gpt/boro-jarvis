@@ -255,13 +255,13 @@ export default function App() {
   if (mode === "computer") {
     return (
       <main className="app-shell app-shell-mini">
-        <section className="mini-companion" aria-label="Ricky computer use mini mode">
+        <section className="mini-companion" aria-label="Spasoje computer use mini mode">
           <RickyFace mood={mood} mouthShape={mouthShape} inputLevel={inputLevel} outputLevel={outputLevel} />
           <button
             className="mini-restore-button"
             onClick={() => void switchMode("display")}
-            aria-label="Return to full Ricky window"
-            title="Return to full Ricky window"
+            aria-label="Return to full Spasoje window"
+            title="Return to full Spasoje window"
           >
             <Expand size={14} />
           </button>
@@ -277,7 +277,7 @@ export default function App() {
         <div className="boot-overlay" aria-hidden="true">
           <div className="boot-ring" />
           <div className="boot-title">
-            RICKY <span>MK II</span>
+            SPASOJE <span>MK II</span>
           </div>
           <div className="boot-lines">
             <span>Initializing audio pipeline</span>
@@ -324,7 +324,7 @@ export default function App() {
                   if (event.key === "Escape") setShowTypeInput(false);
                 }}
                 autoFocus
-                placeholder="Type to Ricky…"
+                placeholder="Type to Spasoje…"
               />
               <button onClick={sendTextPrompt} aria-label="Send typed prompt" title="Send typed prompt">
                 <Send size={15} />
@@ -358,8 +358,8 @@ export default function App() {
             <button
               className={showTypeInput ? "console-button active" : "console-button"}
               onClick={() => setShowTypeInput((value) => !value)}
-              aria-label="Type to Ricky"
-              title="Type to Ricky"
+              aria-label="Type to Spasoje"
+              title="Type to Spasoje"
             >
               <Keyboard size={16} />
               <small>Type</small>

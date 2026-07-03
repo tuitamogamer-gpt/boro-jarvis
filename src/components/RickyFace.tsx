@@ -59,7 +59,7 @@ export function RickyFace({ mood, mouthShape, inputLevel = 0, outputLevel = 0 }:
           "--audio-level": audioLevel.toFixed(3),
         } as CSSProperties
       }
-      aria-label={`Ricky mood: ${mood}`}
+      aria-label={`Spasoje mood: ${mood}`}
     >
       <div className="face-aura" aria-hidden="true" />
       <div className="face-halo" aria-hidden="true" />

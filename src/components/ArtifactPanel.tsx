@@ -250,7 +250,7 @@ function EmptyArtifact() {
       <div className="empty-artifact-glyph" aria-hidden="true">
         <LayoutGrid size={26} />
       </div>
-      <p>Ask Ricky to show web results, weather, charts, notes, records, code, images, or progress here.</p>
+      <p>Ask Spasoje to show web results, weather, charts, notes, records, code, images, or progress here.</p>
     </div>
   );
 }
@@ -270,7 +270,7 @@ function renderArtifact(artifact: RickyArtifact, mermaidState: MermaidState) {
         <div className="mermaid-output" dangerouslySetInnerHTML={{ __html: mermaidState.svg }} />
         {mermaidState.error ? (
           <details className="mermaid-repair">
-            <summary>Ricky repaired this chart so it would still display.</summary>
+            <summary>Spasoje repaired this chart so it would still display.</summary>
             <p>The original Mermaid syntax did not parse, so a safe fallback chart was shown.</p>
             <pre>{mermaidState.source}</pre>
           </details>
@@ -373,7 +373,7 @@ function ThumbnailBoard({ content }: { content: string }) {
       <header className="thumbnail-board-meta">
         <div>
           <span>{page.totalImages ?? images.length} thumbnails</span>
-          <p>{(board.references || []).length} Riley reference image{(board.references || []).length === 1 ? "" : "s"} loaded</p>
+          <p>{(board.references || []).length} reference image{(board.references || []).length === 1 ? "" : "s"} loaded</p>
         </div>
         <small>Page {page.page || 1}/{page.totalPages || 1} · next #{page.nextNumber || "?"}</small>
       </header>
@@ -398,7 +398,7 @@ function ThumbnailBoard({ content }: { content: string }) {
         </div>
       ) : (
         <div className="thumbnail-empty">
-          <p>Riley reference image loaded. Ask Ricky: “Generate a 16:9 thumbnail of me about Cursor agents.”</p>
+          <p>reference image loaded. Ask Spasoje: “Generate a 16:9 thumbnail of me about Cursor agents.”</p>
         </div>
       )}
     </section>
@@ -422,7 +422,7 @@ function DemoFlow({ content }: { content: string }) {
     {
       id: "intake",
       title: "Document intake",
-      subtitle: "Ricky receives the packet and identifies the operational facts.",
+      subtitle: "Spasoje receives the packet and identifies the operational facts.",
       icon: <FileText size={15} />,
     },
     {
@@ -463,7 +463,7 @@ function DemoFlow({ content }: { content: string }) {
           <p>{demo.promise}</p>
         </div>
         <div className="demo-command">
-          <span>Say to Ricky</span>
+          <span>Say to Spasoje</span>
           <p>{demo.triggerPrompt}</p>
         </div>
       </header>

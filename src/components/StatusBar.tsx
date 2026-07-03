@@ -29,7 +29,7 @@ export function StatusBar({ connectionState, mood, mode, status }: StatusBarProp
     <header className="status-bar">
       <div className="status-left">
         <span className={`status-dot status-dot-${connectionState}`} />
-        <strong className="status-name">RICKY</strong>
+        <strong className="status-name">SPASOJE</strong>
         <span className="status-chip status-chip-version">MK&nbsp;II</span>
       </div>
       <div className="status-center" title={status}>

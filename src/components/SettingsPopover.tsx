@@ -31,7 +31,7 @@ export function SettingsPopover({
   onClose,
 }: SettingsPopoverProps) {
   return (
-    <section className="settings-popover" aria-label="Ricky settings">
+    <section className="settings-popover" aria-label="Spasoje settings">
       <header className="settings-header">
         <span className="eyebrow">Settings</span>
         <button onClick={onClose} aria-label="Close settings" title="Close settings">

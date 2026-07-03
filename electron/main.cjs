@@ -58,7 +58,7 @@ function createTray() {
 }
 
 const RICKY_INSTRUCTIONS = `# Role and Objective
-You are Ricky, Riley's desktop AI operator. You speak through realtime voice and can use local tools.
+You are Spasoje, Boro's desktop AI operator. You speak through realtime voice and can use local tools.
 
 # Personality and Tone
 Concise, calm, useful. Use a confident man's voice. Talk like a smart operator, not a chatbot.
@@ -82,8 +82,8 @@ Always reply in the language the user speaks. If the user speaks Serbian, Croati
 
 # Tool Behavior
 - Use read-only tools when the user's intent is clear.
-- When Riley says "show me the menu", "show me what I can do", or asks what Ricky can do, call show_menu immediately.
-- When Riley asks for the Tehnosoft demo, Rikard demo, document intake demo, note extraction demo, or agent handoff demo, call tehnosoft_demo_start immediately.
+- When the user says "show me the menu", "show me what I can do", or asks what Spasoje can do, call show_menu immediately.
+- When the user asks for the Tehnosoft demo, Rikard demo, document intake demo, note extraction demo, or agent handoff demo, call tehnosoft_demo_start immediately.
 - For web search, weather, timers, notes, charts, records, image generation, system info, and artifact display, act directly when the request is clear.
 - For weather questions, call weather_get with the location the user mentions.
 - For timers and short reminders ("set a timer for 5 minutes"), use timer_set / timer_list / timer_cancel. When a timer fires you will get an automatic notification message; announce it in one short sentence.
@@ -98,12 +98,12 @@ Always reply in the language the user speaks. If the user speaks Serbian, Croati
 - Use currency_convert for currency questions ("koliko je 100 evra u dinarima" → amount 100, from EUR, to RSD).
 - Use screen_describe when the user asks what is on their screen (requires computer mode).
 - Use set_theme when the user asks to change the app's color theme (cyan, crimson, amber, emerald, violet).
-- For thumbnail creation/editing, always use the thumbnail board tools, never generic image_generate and never artifact_show with imageLoading. Generate exactly one 16:9 image per request. Never generate multiple unless Riley separately asks again. Every generate/edit request gets a permanent database number that never changes, like #18 then #19 then #20. Do not renumber visible grid positions. Show paginated 3x3 pages of the permanent numbers. Do not show a standalone fullscreen loading animation for thumbnails. Use Riley's wording literally: do not invent elaborate extra concepts, fake text, or extra thumbnail ideas. For edits, use the exact existing numbered/selected image as input and make only the requested change.
-- The thumbnail board persists across sessions. If Riley references thumbnail #N, trust that permanent number and call the matching thumbnail tool. Do not say you cannot see old thumbnails. Use thumbnail_grid to refresh state or change pages if needed.
+- For thumbnail creation/editing, always use the thumbnail board tools, never generic image_generate and never artifact_show with imageLoading. Generate exactly one 16:9 image per request. Never generate multiple unless the user separately asks again. Every generate/edit request gets a permanent database number that never changes, like #18 then #19 then #20. Do not renumber visible grid positions. Show paginated 3x3 pages of the permanent numbers. Do not show a standalone fullscreen loading animation for thumbnails. Use the user's wording literally: do not invent elaborate extra concepts, fake text, or extra thumbnail ideas. For edits, use the exact existing numbered/selected image as input and make only the requested change.
+- The thumbnail board persists across sessions. If the user references thumbnail #N, trust that permanent number and call the matching thumbnail tool. Do not say you cannot see old thumbnails. Use thumbnail_grid to refresh state or change pages if needed.
 - When a thumbnail finishes generating or editing, do not announce it verbally. The UI updates silently.
 - For sending messages, deleting data, buying things, account changes, sharing private information, or anything irreversible, summarize the action and ask for explicit confirmation before calling the modifying tool.
 - If a tool requires a confirmed field, set confirmed to true only after the user clearly confirms.
-- Typing text and pressing Enter/Return in computer use mode are allowed without extra approval when Riley asks you to type or send a prompt. Ask first before clicking controls or taking actions that delete, purchase, change settings, or expose private information.
+- Typing text and pressing Enter/Return in computer use mode are allowed without extra approval when the user asks you to type or send a prompt. Ask first before clicking controls or taking actions that delete, purchase, change settings, or expose private information.
 - Explain what you are doing in one short sentence before longer tool work. Do not over-explain.
 
 # Artifacts
@@ -117,7 +117,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "set_mode",
-    description: "Switch Ricky between display mode and computer use mode.",
+    description: "Switch Spasoje between display mode and computer use mode.",
     parameters: {
       type: "object",
       properties: {
@@ -147,7 +147,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "show_menu",
-    description: "Show Ricky's capability menu in the artifact panel. Call this when the user asks 'show me the menu', 'show me what I can do', or asks what Ricky can do.",
+    description: "Show Spasoje's capability menu in the artifact panel. Call this when the user asks 'show me the menu', 'show me what I can do', or asks what Spasoje can do.",
     parameters: {
       type: "object",
       properties: {},
@@ -195,7 +195,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "thumbnail_reference_add",
-    description: "Add a local image file as a reference image for making thumbnails of Riley. Use when Riley gives a file path to a photo of himself.",
+    description: "Add a local image file as a reference image for making thumbnails of the user. Use when the user gives a file path to a photo of themselves.",
     parameters: {
       type: "object",
       properties: {
@@ -209,7 +209,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "thumbnail_generate",
-    description: "Generate exactly one 16:9 YouTube thumbnail into Ricky's persistent paginated thumbnail board. Uses Riley reference images if available. Assigns a new permanent number that never changes. Never generate multiple at once.",
+    description: "Generate exactly one 16:9 YouTube thumbnail into Spasoje's persistent paginated thumbnail board. Uses the user's reference images if available. Assigns a new permanent number that never changes. Never generate multiple at once.",
     parameters: {
       type: "object",
       properties: {
@@ -222,7 +222,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "thumbnail_edit",
-    description: "Edit one existing thumbnail by permanent thumbnail number, or edit the currently selected thumbnail if number is omitted. Use this whenever Riley says 'edit number 20' or 'edit this'. The edited result gets a new permanent number.",
+    description: "Edit one existing thumbnail by permanent thumbnail number, or edit the currently selected thumbnail if number is omitted. Use this whenever the user says 'edit number 20' or 'edit this'. The edited result gets a new permanent number.",
     parameters: {
       type: "object",
       properties: {
@@ -236,7 +236,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "thumbnail_select",
-    description: "Select a permanent numbered thumbnail and show it fullscreen. Use when Riley says 'pull up number 20', 'show number 20', 'open number 20', or 'select number 20'.",
+    description: "Select a permanent numbered thumbnail and show it fullscreen. Use when the user says 'pull up number 20', 'show number 20', 'open number 20', or 'select number 20'.",
     parameters: {
       type: "object",
       properties: {
@@ -249,7 +249,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "thumbnail_grid",
-    description: "Show one paginated 3x3 page of the persistent thumbnail board and return compact board state. Use to refresh state, change pages, or when Riley asks what thumbnails exist.",
+    description: "Show one paginated 3x3 page of the persistent thumbnail board and return compact board state. Use to refresh state, change pages, or when the user asks what thumbnails exist.",
     parameters: {
       type: "object",
       properties: {
@@ -275,7 +275,7 @@ const toolSpecs = [
   {
     type: "function",
     name: "note_add",
-    description: "Add a note to Ricky's fun local notes list.",
+    description: "Add a note to Spasoje's fun local notes list.",
     parameters: {
       type: "object",
       properties: {
@@ -836,7 +836,7 @@ function requireComputerMode() {
     return {
       ok: false,
       needsMode: "computer",
-      message: "Computer control is disabled. Ask Ricky to switch to computer use mode first.",
+      message: "Computer control is disabled. Ask Spasoje to switch to computer use mode first.",
     };
   }
   return null;
@@ -1011,7 +1011,7 @@ ipcMain.handle("realtime:create-token", async () => {
           },
         },
         tracing: {
-          workflow_name: "Ricky Desktop Companion",
+          workflow_name: "Spasoje Desktop Companion",
         },
       },
     }),
@@ -1042,7 +1042,7 @@ ipcMain.handle("tools:execute", async (_event, toolCall) => {
         ok: true,
         mode: currentMode,
         artifact: {
-          title: "Ricky Mode",
+          title: "Spasoje Mode",
           kind: "progress",
           content: `Mode switched to ${currentMode === "computer" ? "computer use" : "display"} mode.`,
         },
@@ -1057,7 +1057,7 @@ ipcMain.handle("tools:execute", async (_event, toolCall) => {
       return {
         ok: true,
         artifact: {
-          title: "Ricky Menu",
+          title: "Spasoje Menu",
           kind: "markdown",
           content: buildMenuMarkdown(),
         },
@@ -1562,7 +1562,7 @@ async function webSearch(args) {
 function formatSearchMarkdown(query, results) {
   const cleanQuery = query.trim() || "Search";
   if (results.length === 0) {
-    return `# ${cleanQuery}\n\nNo strong web results came back for this search. Try a narrower query or ask Ricky to search a specific site.`;
+    return `# ${cleanQuery}\n\nNo strong web results came back for this search. Try a narrower query or ask Spasoje to search a specific site.`;
   }
 
   const sections = results.slice(0, 8).map((result, index) => {
@@ -1576,7 +1576,7 @@ function formatSearchMarkdown(query, results) {
     return `### ${index + 1}. ${title}\n\n${text || "No snippet was returned for this result."}\n\n- Source: ${source}${published}\n- ${link}`;
   });
 
-  return [`# ${cleanQuery}`, `Ricky found ${results.length} source${results.length === 1 ? "" : "s"}.`, ...sections].join(
+  return [`# ${cleanQuery}`, `Spasoje found ${results.length} source${results.length === 1 ? "" : "s"}.`, ...sections].join(
     "\n\n",
   );
 }
@@ -1790,9 +1790,9 @@ return eventLines as string`;
     const message = error instanceof Error ? error.message : String(error);
     const timedOut = Boolean(error && (error.killed === true || error.signal === "SIGTERM")) || /timed out|ETIMEDOUT/i.test(message);
     if (timedOut) {
-      return { ok: false, error: "Calendar took too long to answer. It may be syncing, or macOS may need automation permission for Ricky." };
+      return { ok: false, error: "Calendar took too long to answer. It may be syncing, or macOS may need automation permission for Spasoje." };
     }
-    return { ok: false, error: `Calendar lookup failed: ${message}. macOS may need automation permission for Ricky.` };
+    return { ok: false, error: `Calendar lookup failed: ${message}. macOS may need automation permission for Spasoje.` };
   }
 }
 
@@ -1821,7 +1821,7 @@ tell application "Reminders" to make new reminder with properties {name:${appleS
       },
     };
   } catch (error) {
-    return { ok: false, error: `Reminder failed: ${error instanceof Error ? error.message : String(error)}. macOS may need automation permission for Ricky.` };
+    return { ok: false, error: `Reminder failed: ${error instanceof Error ? error.message : String(error)}. macOS may need automation permission for Spasoje.` };
   }
 }
 
@@ -2162,13 +2162,13 @@ function hostname(url) {
 }
 
 function buildMenuMarkdown() {
-  return `# Ricky Menu
+  return `# Spasoje Menu
 
 Here is what you can ask me to do.
 
 ## Voice and Conversation
 
-- Talk naturally with Ricky in realtime.
+- Talk naturally with Spasoje in realtime.
 - Interrupt mid-response and ask follow-ups.
 - Ask unrelated questions while tools keep running.
 
@@ -2201,7 +2201,7 @@ Here is what you can ask me to do.
 - "Remind me to call Marko in an hour." — creates a Reminders task.
 - "Find my file named budget." — Spotlight search, then open or reveal it.
 - "Send a message to +387... saying I'm on my way." — iMessage, always confirmed first.
-- Press ⌃⌥Space anywhere to show or hide Ricky. He also lives in the menu bar (◉).
+- Press ⌃⌥Space anywhere to show or hide Spasoje. He also lives in the menu bar (◉).
 
 ## Visuals
 
@@ -2212,15 +2212,15 @@ Here is what you can ask me to do.
 
 ## Notes and Records
 
-- Add, list, and confirm-delete notes in Ricky's local note grid.
+- Add, list, and confirm-delete notes in Spasoje's local note grid.
 - Create, search, update, and confirm-delete local database records.
 
 ## Computer Use Mode
 
 - "Switch to computer use mode."
 - Open apps, click, type, press Enter/Return, scroll, inspect the UI, and take screen snapshots.
-- "What's on my screen?" — Ricky captures the screen and describes it with a vision model.
-- Ricky asks before risky actions like sending, deleting, buying, changing settings, or sharing private info.
+- "What's on my screen?" — Spasoje captures the screen and describes it with a vision model.
+- Spasoje asks before risky actions like sending, deleting, buying, changing settings, or sharing private info.
 
 ## Good Starter Prompts
 
@@ -2246,9 +2246,9 @@ function buildTehnosoftDemoArtifact() {
         },
         headline: "Document intake -> note extraction -> agent handoff",
         promise:
-          "One concrete desktop-agent workflow: Ricky takes an operations document packet, extracts actionable notes, and hands the work to a specialist agent with context intact.",
+          "One concrete desktop-agent workflow: Spasoje takes an operations document packet, extracts actionable notes, and hands the work to a specialist agent with context intact.",
         triggerPrompt:
-          "Ricky, intake this Tehnosoft service packet, extract operational notes, and hand it off to the follow-up agent.",
+          "Spasoje, intake this Tehnosoft service packet, extract operational notes, and hand it off to the follow-up agent.",
         packet: {
           source: "Email attachment + local PDF folder",
           receivedAt: "Tue 09:18",
@@ -2318,7 +2318,7 @@ function buildTehnosoftDemoArtifact() {
             "Open ERP service case SR-4182",
             "Check spare-part stock and alternatives",
             "Draft customer response for Friday 15:00",
-            "Ask Ricky to switch to computer-use mode for ERP entry when ready",
+            "Ask Spasoje to switch to computer-use mode for ERP entry when ready",
           ],
           handoffMessage:
             "Service Resolution Agent: use the SR-4182 packet to resolve warranty eligibility, verify spare-part ETA, and draft a Friday customer update. Key risk: promised 2-day response conflicts with 10-day part lead time. Missing input: serial plate photo.",
@@ -2334,7 +2334,7 @@ function buildTehnosoftDemoArtifact() {
             time: "0:30-1:35",
             title: "Document intake",
             words:
-              "I give Ricky a service packet. It identifies the files, classifies the document types, and pulls out the operational fields that matter before anyone opens the ERP.",
+              "I give Spasoje a service packet. It identifies the files, classifies the document types, and pulls out the operational fields that matter before anyone opens the ERP.",
           },
           {
             time: "1:35-3:10",
@@ -2346,7 +2346,7 @@ function buildTehnosoftDemoArtifact() {
             time: "3:10-4:25",
             title: "Agent handoff",
             words:
-              "Then Ricky packages the context for the next agent. The handoff has the source packet, extracted notes, risk, deadline, and next actions, so the next step starts with context instead of a blank chat.",
+              "Then Spasoje packages the context for the next agent. The handoff has the source packet, extracted notes, risk, deadline, and next actions, so the next step starts with context instead of a blank chat.",
           },
           {
             time: "4:25-5:00",
@@ -2697,7 +2697,7 @@ function thumbnailRecord(image, prompt, type, size) {
 
 function thumbnailPrompt(prompt, hasReferences) {
   return [
-    hasReferences ? "Use the provided reference image(s) of Riley as the identity reference." : "",
+    hasReferences ? "Use the provided reference image(s) of the user as the identity reference." : "",
     "Create one 16:9 YouTube thumbnail.",
     "Follow this request literally. Do not add extra concepts, fake UI, extra text, watermarks, or unrelated elements.",
     prompt,
@@ -2824,7 +2824,7 @@ function buildMemoryInstructions(db) {
   const notes = db.notes.slice(0, 8).map((note) => `- ${String(note.text || "").slice(0, 140)}`);
   const log = (db.conversationLog || [])
     .slice(-20)
-    .map((entry) => `${entry.role === "user" ? "User" : "Ricky"}: ${String(entry.text || "").slice(0, 200)}`);
+    .map((entry) => `${entry.role === "user" ? "User" : "Spasoje"}: ${String(entry.text || "").slice(0, 200)}`);
   if (notes.length === 0 && log.length === 0) return "";
   return [
     "# Memory From Previous Sessions",
@@ -2854,7 +2854,7 @@ Next new thumbnail number: ${summary.page.nextNumber}
 Visible permanent thumbnail numbers:
 ${imageLines}
 
-When Riley says "pull up number N", "select N", or "show N", call thumbnail_select with that permanent number. When Riley says "edit this", use thumbnail_edit with no number if a selected thumbnail number exists. When Riley says "edit number N", call thumbnail_edit with that permanent number. When he asks for older thumbnails or another page, call thumbnail_grid with the requested page. Do not claim you cannot see prior thumbnails; this board state is persistent and paginated.`;
+When the user says "pull up number N", "select N", or "show N", call thumbnail_select with that permanent number. When the user says "edit this", use thumbnail_edit with no number if a selected thumbnail number exists. When the user says "edit number N", call thumbnail_edit with that permanent number. When they ask for older thumbnails or another page, call thumbnail_grid with the requested page. Do not claim you cannot see prior thumbnails; this board state is persistent and paginated.`;
 }
 
 async function thumbnailBoardArtifact(db, view) {
@@ -2941,7 +2941,7 @@ function normalizeMermaidDiagram(diagram, title) {
 
 function fallbackMermaidDiagram(title) {
   const safeTitle = String(title || "Chart").replace(/["<>]/g, "");
-  return `flowchart TD\n  A["${safeTitle}"] --> B["Chart request received"]\n  B --> C["Ricky will show a safe fallback if syntax fails"]`;
+  return `flowchart TD\n  A["${safeTitle}"] --> B["Chart request received"]\n  B --> C["Spasoje will show a safe fallback if syntax fails"]`;
 }
 
 app.whenReady().then(async () => {

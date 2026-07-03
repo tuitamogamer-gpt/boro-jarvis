@@ -48,9 +48,9 @@ export function ChatPanel({ entries, onClear, onClose }: ChatPanelProps) {
 
 function exportTranscript(entries: TranscriptEntry[]) {
   const roleName = (role: TranscriptEntry["role"]) =>
-    role === "ricky" ? "Ricky" : role === "user" ? "You" : role === "tool" ? "Tool" : "System";
+    role === "ricky" ? "Spasoje" : role === "user" ? "You" : role === "tool" ? "Tool" : "System";
   const lines = [
-    "# Ricky Conversation",
+    "# Spasoje Conversation",
     "",
     `Exported: ${new Date().toLocaleString()}`,
     "",
@@ -90,7 +90,7 @@ function ChatBubble({ entry }: { entry: TranscriptEntry }) {
     <article className={isUser ? "chat-bubble chat-bubble-user" : "chat-bubble chat-bubble-ricky"}>
       <header>
         {isUser ? <User size={12} /> : <Bot size={12} />}
-        <strong>{isUser ? "You" : "Ricky"}</strong>
+        <strong>{isUser ? "You" : "Spasoje"}</strong>
         <time>{entry.at}</time>
       </header>
       <p>{entry.text}</p>

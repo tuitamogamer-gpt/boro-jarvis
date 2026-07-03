@@ -123,7 +123,7 @@ export class RickyRealtimeClient {
         }, 30_000);
         this.callbacks.onConnectionState("connected");
         this.callbacks.onMood("idle");
-        this.callbacks.onStatus("Ricky is live. Start talking naturally.");
+        this.callbacks.onStatus("Spasoje is live. Start talking naturally.");
       });
       dc.addEventListener("message", (event) => {
         void this.handleServerEvent(event.data);
@@ -254,7 +254,7 @@ export class RickyRealtimeClient {
 
   sendText(text: string): void {
     if (!this.dc || this.dc.readyState !== "open") {
-      this.callbacks.onStatus("Connect Ricky before sending a text prompt.");
+      this.callbacks.onStatus("Connect Spasoje before sending a text prompt.");
       return;
     }
     this.callbacks.onTranscript(newEntry("user", text));
@@ -390,7 +390,7 @@ export class RickyRealtimeClient {
       this.callbacks.onArtifact({
         title: "Generating Image",
         kind: "imageLoading",
-        content: typeof parsedArgs.prompt === "string" ? parsedArgs.prompt : "Ricky is generating an image.",
+        content: typeof parsedArgs.prompt === "string" ? parsedArgs.prompt : "Spasoje is generating an image.",
       });
     }
     if (name === "thumbnail_generate" || name === "thumbnail_edit") {
