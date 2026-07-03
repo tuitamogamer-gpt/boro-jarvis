@@ -1,8 +1,8 @@
-# RileyJarvis
+# Boro Jarvis
 
-RileyJarvis is a local Electron desktop AI companion with realtime voice, a visual artifact panel, image generation, web search, notes, and opt-in macOS computer control.
+Boro Jarvis is a local Electron desktop AI companion with realtime voice, a visual artifact panel, image generation, web search, weather, timers, calendar and reminders, music control, notes, and opt-in macOS computer control.
 
-It is built with Electron, React, Vite, TypeScript, and the OpenAI Realtime API.
+It is built with Electron, React, Vite, TypeScript, and the OpenAI Realtime API. Based on [RileyJarvis](https://github.com/rbrown101010/rileyjarvis) by Riley Brown (MIT).
 
 ## Features
 
@@ -25,8 +25,8 @@ It is built with Electron, React, Vite, TypeScript, and the OpenAI Realtime API.
 ## Quick Start
 
 ```bash
-git clone https://github.com/rileybrown/rileyjarvis.git
-cd rileyjarvis
+git clone https://github.com/tuitamogamer-gpt/boro-jarvis.git
+cd boro-jarvis
 npm install
 cp .env.example .env.local
 npm run dev
@@ -43,7 +43,7 @@ EXA_API_KEY=your_exa_api_key_here
 
 ## macOS Permissions
 
-RileyJarvis runs locally. Depending on the features you use, macOS may ask for:
+Boro Jarvis runs locally. Depending on the features you use, macOS may ask for:
 
 - Microphone permission for voice conversation.
 - Accessibility permission for computer-control tools.

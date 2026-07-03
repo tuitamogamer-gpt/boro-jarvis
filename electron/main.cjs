@@ -44,12 +44,12 @@ function createTray() {
   try {
     tray = new Tray(nativeImage.createEmpty());
     tray.setTitle("◉");
-    tray.setToolTip("Ricky");
+    tray.setToolTip("Boro Jarvis");
     tray.setContextMenu(
       Menu.buildFromTemplate([
-        { label: "Show / Hide Ricky", click: () => toggleMainWindow() },
+        { label: "Show / Hide Boro Jarvis", click: () => toggleMainWindow() },
         { type: "separator" },
-        { label: "Quit Ricky", click: () => app.quit() },
+        { label: "Quit Boro Jarvis", click: () => app.quit() },
       ]),
     );
   } catch {
@@ -874,7 +874,7 @@ async function createWindow() {
     height: 760,
     minWidth: 420,
     minHeight: 520,
-    title: "Ricky",
+    title: "Boro Jarvis",
     frame: false,
     transparent: true,
     backgroundColor: "#00000000",
