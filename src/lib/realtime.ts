@@ -26,6 +26,10 @@ export type RealtimeCallbacks = {
   onMode: (mode: "display" | "computer") => void;
   onStatus: (message: string) => void;
   onThumbnailReady: () => void;
+  onInputLevel?: (level: number) => void;
+  onOutputLevel?: (level: number) => void;
+  onTheme?: (theme: string) => void;
+  onCaption?: (text: string) => void;
 };
 
 type ServerEvent = {
@@ -66,6 +70,15 @@ export class RickyRealtimeClient {
   private audioContext: AudioContext | null = null;
   private outputAnalyser: AnalyserNode | null = null;
   private outputMeterFrame = 0;
+  private inputAudioContext: AudioContext | null = null;
+  private inputMeterFrame = 0;
+  private muted = false;
+  private closing = false;
+  private responseActive = false;
+  private pendingAnnouncements: string[] = [];
+  private reconnectAttempts = 0;
+  private reconnectTimer: number | null = null;
+  private stableResetTimer = 0;
   private smoothedMouthShape: MouthShape = silentMouthShape();
 
   constructor(callbacks: RealtimeCallbacks) {
@@ -74,6 +87,7 @@ export class RickyRealtimeClient {
 
   async connect(): Promise<void> {
     if (this.pc) return;
+    this.closing = false;
     this.callbacks.onConnectionState("connecting");
     this.callbacks.onMood("thinking");
     this.callbacks.onStatus("Minting a Realtime client secret.");
@@ -98,15 +112,37 @@ export class RickyRealtimeClient {
         },
       });
       pc.addTrack(this.micStream.getAudioTracks()[0], this.micStream);
+      this.startInputMeter(this.micStream);
 
       const dc = pc.createDataChannel("oai-events");
       dc.addEventListener("open", () => {
+        // Only refresh the retry budget once the link has proven stable,
+        // so a flapping connection cannot reconnect forever.
+        this.stableResetTimer = window.setTimeout(() => {
+          this.reconnectAttempts = 0;
+        }, 30_000);
         this.callbacks.onConnectionState("connected");
         this.callbacks.onMood("idle");
         this.callbacks.onStatus("Ricky is live. Start talking naturally.");
       });
       dc.addEventListener("message", (event) => {
         void this.handleServerEvent(event.data);
+      });
+      dc.addEventListener("close", () => {
+        window.clearTimeout(this.stableResetTimer);
+        if (!this.closing && this.pc) {
+          this.disconnect();
+          this.reconnectAttempts += 1;
+          if (this.reconnectAttempts <= 2) {
+            this.callbacks.onStatus(`Voice link dropped — reconnecting (${this.reconnectAttempts}/2)…`);
+            this.reconnectTimer = window.setTimeout(() => {
+              this.reconnectTimer = null;
+              void this.connect();
+            }, 900);
+          } else {
+            this.callbacks.onStatus("Voice connection closed. Reconnect to keep talking.");
+          }
+        }
       });
 
       const offer = await pc.createOffer();
@@ -141,17 +177,79 @@ export class RickyRealtimeClient {
   }
 
   disconnect(): void {
+    this.closing = true;
+    if (this.reconnectTimer !== null) {
+      window.clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    window.clearTimeout(this.stableResetTimer);
     this.dc?.close();
     this.pc?.close();
     this.micStream?.getTracks().forEach((track) => track.stop());
     this.stopOutputMeter();
+    this.stopInputMeter();
     this.dc = null;
     this.pc = null;
     this.micStream = null;
+    this.muted = false;
     this.currentAssistantText = "";
     this.callbacks.onConnectionState("idle");
     this.callbacks.onMood("idle");
     this.callbacks.onMouthShape(silentMouthShape());
+    this.callbacks.onCaption?.("");
+  }
+
+  setMuted(muted: boolean): void {
+    this.muted = muted;
+    this.micStream?.getAudioTracks().forEach((track) => {
+      track.enabled = !muted;
+    });
+  }
+
+  isMuted(): boolean {
+    return this.muted;
+  }
+
+  notifyBackground(text: string): void {
+    if (!this.dc || this.dc.readyState !== "open") return;
+    if (this.responseActive || this.toolRunning) {
+      this.pendingAnnouncements.push(text);
+      return;
+    }
+    this.sendNotificationItem(text);
+    this.sendEvent({ type: "response.create" });
+  }
+
+  private sendNotificationItem(text: string): void {
+    this.sendEvent({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: `[Automatic notification, not spoken by the user] ${text} Respond in one short sentence in the language you have been speaking.`,
+          },
+        ],
+      },
+    });
+  }
+
+  private flushPendingAnnouncements(): void {
+    if (this.pendingAnnouncements.length === 0) return;
+    if (!this.dc || this.dc.readyState !== "open") {
+      this.pendingAnnouncements = [];
+      return;
+    }
+    const pending = [...this.pendingAnnouncements];
+    this.pendingAnnouncements = [];
+    for (const text of pending) this.sendNotificationItem(text);
+    this.sendEvent({ type: "response.create" });
+  }
+
+  notifyTimerFired(label: string): void {
+    this.notifyBackground(`The timer "${label}" just finished. Announce it.`);
   }
 
   sendText(text: string): void {
@@ -176,8 +274,18 @@ export class RickyRealtimeClient {
     if (!event.type) return;
 
     if (event.type === "error") {
+      const message = event.error?.message || "Realtime API returned an error.";
+      if (/active response/i.test(message)) {
+        // A background announcement raced an in-flight response; not fatal.
+        return;
+      }
       this.callbacks.onMood("error");
-      this.callbacks.onStatus(event.error?.message || "Realtime API returned an error.");
+      this.callbacks.onStatus(message);
+      return;
+    }
+
+    if (event.type === "response.created") {
+      this.responseActive = true;
       return;
     }
 
@@ -201,12 +309,19 @@ export class RickyRealtimeClient {
       return;
     }
 
+    if (event.type === "output_audio_buffer.stopped" || event.type === "output_audio_buffer.cleared") {
+      // Audio playback actually finished (or was interrupted) — hide captions now.
+      this.callbacks.onCaption?.("");
+      return;
+    }
+
     if (
       event.type === "response.audio_transcript.delta" ||
       event.type === "response.output_audio_transcript.delta" ||
       event.type === "response.output_text.delta"
     ) {
       this.currentAssistantText += event.delta || "";
+      this.callbacks.onCaption?.(this.currentAssistantText);
       return;
     }
 
@@ -217,6 +332,7 @@ export class RickyRealtimeClient {
     }
 
     if (event.type === "response.done") {
+      this.responseActive = false;
       const output = event.response?.output || [];
       const spoken = this.currentAssistantText || output.map(collectOutputText).filter(Boolean).join("\n");
       if (spoken) this.callbacks.onTranscript(newEntry("ricky", spoken));
@@ -225,8 +341,9 @@ export class RickyRealtimeClient {
       const functionCalls = output.filter((item) => item.type === "function_call" && item.name && item.call_id);
       if (functionCalls.length > 0) {
         await this.executeFunctionCalls(functionCalls);
-      } else if (!this.toolRunning) {
-        this.callbacks.onMood("idle");
+      } else {
+        if (!this.toolRunning) this.callbacks.onMood("idle");
+        this.flushPendingAnnouncements();
       }
     }
   }
@@ -234,56 +351,69 @@ export class RickyRealtimeClient {
   private async executeFunctionCalls(items: ResponseOutputItem[]): Promise<void> {
     this.toolRunning = true;
     this.callbacks.onMood("working");
-    let shouldCreateResponse = false;
 
-    for (const item of items) {
-      const callId = item.call_id;
-      const name = item.name;
-      if (!callId || !name) continue;
-
-      const parsedArgs = parseToolArguments(item.arguments || "{}");
-      const knownTool = this.toolSpecs.some((tool) => tool.name === name);
-      if (!knownTool) {
-        await this.returnToolOutput(callId, {
-          ok: false,
-          error: `Tool is not available: ${name}`,
-        });
-        shouldCreateResponse = true;
-        continue;
+    // Desktop-control calls (type, click, press key) are order-dependent —
+    // run those batches sequentially; everything else runs in parallel.
+    let outcomes: boolean[];
+    if (items.length > 1 && items.some((item) => isOrderDependentTool(item.name))) {
+      outcomes = [];
+      for (const item of items) {
+        outcomes.push(await this.executeFunctionCall(item));
       }
-
-      this.callbacks.onTranscript(newEntry("tool", `Running ${name}`));
-      if (name === "image_generate") {
-        this.callbacks.onArtifact({
-          title: "Generating Image",
-          kind: "imageLoading",
-          content: typeof parsedArgs.prompt === "string" ? parsedArgs.prompt : "Ricky is generating an image.",
-        });
-      }
-      if (name === "thumbnail_generate" || name === "thumbnail_edit") {
-        const loadingResult = await window.ricky.executeTool({
-          name: "thumbnail_loading_prepare",
-          arguments: {
-            ...parsedArgs,
-            mode: name === "thumbnail_edit" ? "edit" : "generate",
-          },
-        } satisfies RickyToolCall);
-        if (typeof loadingResult.runId === "string") parsedArgs.runId = loadingResult.runId;
-        if (typeof loadingResult.targetId === "string") parsedArgs.targetId = loadingResult.targetId;
-        if (loadingResult.artifact) this.callbacks.onArtifact(loadingResult.artifact);
-      }
-      const result = await window.ricky.executeTool({ name, arguments: parsedArgs } satisfies RickyToolCall);
-      if (result.mode === "display" || result.mode === "computer") {
-        this.callbacks.onMode(result.mode);
-      }
-      if (result.artifact) this.callbacks.onArtifact(result.artifact);
-      if (result.thumbnailReady === true) this.callbacks.onThumbnailReady();
-      if (result.silent !== true) shouldCreateResponse = true;
-      await this.returnToolOutput(callId, result);
+    } else {
+      outcomes = await Promise.all(items.map((item) => this.executeFunctionCall(item)));
     }
 
-    if (shouldCreateResponse) this.sendEvent({ type: "response.create" });
+    const shouldRespond = outcomes.some(Boolean);
+    if (shouldRespond) this.sendEvent({ type: "response.create" });
     this.toolRunning = false;
+    if (!shouldRespond) this.flushPendingAnnouncements();
+  }
+
+  private async executeFunctionCall(item: ResponseOutputItem): Promise<boolean> {
+    const callId = item.call_id;
+    const name = item.name;
+    if (!callId || !name) return false;
+
+    const parsedArgs = parseToolArguments(item.arguments || "{}");
+    const knownTool = this.toolSpecs.some((tool) => tool.name === name);
+    if (!knownTool) {
+      await this.returnToolOutput(callId, {
+        ok: false,
+        error: `Tool is not available: ${name}`,
+      });
+      return true;
+    }
+
+    this.callbacks.onTranscript(newEntry("tool", `Running ${name}`));
+    if (name === "image_generate") {
+      this.callbacks.onArtifact({
+        title: "Generating Image",
+        kind: "imageLoading",
+        content: typeof parsedArgs.prompt === "string" ? parsedArgs.prompt : "Ricky is generating an image.",
+      });
+    }
+    if (name === "thumbnail_generate" || name === "thumbnail_edit") {
+      const loadingResult = await window.ricky.executeTool({
+        name: "thumbnail_loading_prepare",
+        arguments: {
+          ...parsedArgs,
+          mode: name === "thumbnail_edit" ? "edit" : "generate",
+        },
+      } satisfies RickyToolCall);
+      if (typeof loadingResult.runId === "string") parsedArgs.runId = loadingResult.runId;
+      if (typeof loadingResult.targetId === "string") parsedArgs.targetId = loadingResult.targetId;
+      if (loadingResult.artifact) this.callbacks.onArtifact(loadingResult.artifact);
+    }
+    const result = await window.ricky.executeTool({ name, arguments: parsedArgs } satisfies RickyToolCall);
+    if (result.mode === "display" || result.mode === "computer") {
+      this.callbacks.onMode(result.mode);
+    }
+    if (typeof result.theme === "string") this.callbacks.onTheme?.(result.theme);
+    if (result.artifact) this.callbacks.onArtifact(result.artifact);
+    if (result.thumbnailReady === true) this.callbacks.onThumbnailReady();
+    await this.returnToolOutput(callId, result);
+    return result.silent !== true;
   }
 
   private async returnToolOutput(callId: string, result: RickyToolResult): Promise<void> {
@@ -328,6 +458,7 @@ export class RickyRealtimeClient {
       }
       const rms = Math.sqrt(total / samples.length);
       const energy = clamp01(rms * 10.5);
+      this.callbacks.onOutputLevel?.(energy);
       const bands = getSpeechBands(frequencies);
 
       // Simple realtime viseme approximation: low energy rounds the mouth,
@@ -355,7 +486,51 @@ export class RickyRealtimeClient {
     this.audioContext = null;
     this.outputAnalyser = null;
     this.smoothedMouthShape = silentMouthShape();
+    this.callbacks.onOutputLevel?.(0);
   }
+
+  private startInputMeter(stream: MediaStream): void {
+    this.stopInputMeter();
+
+    const audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.8;
+    source.connect(analyser);
+    this.inputAudioContext = audioContext;
+
+    const samples = new Uint8Array(analyser.fftSize);
+    let smoothed = 0;
+    const tick = () => {
+      analyser.getByteTimeDomainData(samples);
+      let total = 0;
+      for (const sample of samples) {
+        const centered = (sample - 128) / 128;
+        total += centered * centered;
+      }
+      const rms = Math.sqrt(total / samples.length);
+      const level = this.muted ? 0 : clamp01(rms * 9);
+      smoothed = lerp(smoothed, level, 0.3);
+      this.callbacks.onInputLevel?.(smoothed);
+      this.inputMeterFrame = window.requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  private stopInputMeter(): void {
+    if (this.inputMeterFrame) {
+      window.cancelAnimationFrame(this.inputMeterFrame);
+      this.inputMeterFrame = 0;
+    }
+    void this.inputAudioContext?.close();
+    this.inputAudioContext = null;
+    this.callbacks.onInputLevel?.(0);
+  }
+}
+
+function isOrderDependentTool(name: string | undefined): boolean {
+  return Boolean(name && (name.startsWith("computer_") || name === "screen_snapshot" || name === "screen_describe" || name === "ui_inspect"));
 }
 
 function silentMouthShape(): MouthShape {
